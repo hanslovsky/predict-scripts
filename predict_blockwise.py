@@ -70,15 +70,16 @@ def predict_blockwise(
     block_input_roi  = Roi((0, 0, 0), block_input_size) - context
     block_output_roi = Roi((0, 0, 0), block_output_size)
 
-    _logger.debug('input_voxel_size  %s', input_voxel_size)
-    _logger.debug('output_voxel_size %s', output_voxel_size)
-    _logger.debug('input shape       %s', input_shape)
-    _logger.debug('output shape      %s', output_shape)
-    _logger.debug('block_input_size  %s', block_input_size)
-    _logger.debug('block_output_size %s', block_output_size)
-    _logger.debug('block_input_roi   %s', block_input_roi)
-    _logger.debug('block_output_roi  %s', block_output_roi)
-    _logger.debug('input_roi         %s', input_roi)
+    _logger.debug('input_roi_in_pixels %s', input_roi_in_pixels)
+    _logger.debug('input_voxel_size    %s', input_voxel_size)
+    _logger.debug('output_voxel_size   %s', output_voxel_size)
+    _logger.debug('input shape         %s', input_shape)
+    _logger.debug('output shape        %s', output_shape)
+    _logger.debug('block_input_size    %s', block_input_size)
+    _logger.debug('block_output_size   %s', block_output_size)
+    _logger.debug('block_input_roi     %s', block_input_roi)
+    _logger.debug('block_output_roi    %s', block_output_roi)
+    _logger.debug('input_roi           %s', input_roi)
     # _logger.debug('output_roi        %s', output_roi)
 
     cwd = os.getcwd()
@@ -91,6 +92,7 @@ def predict_blockwise(
         write_roi = block.write_roi
         predict_script = '/groups/saalfeld/home/hanslovskyp/experiments/quasi-isotropic/predict/predict.py'
         cuda_visible_devices = get_worker().cuda_visible_devices
+        predict_scripts_args = ''
 
         name = 'predict-%s-%s' % (write_roi.get_begin(), write_roi.get_size())
         log_file = os.path.join(cwd, '%s.log' % name)
@@ -110,10 +112,11 @@ def predict_blockwise(
             '-w', cwd,
             '--name', name,
             'neptunes5thmoon/gunpowder:v0.3-pre6-dask1'
-            '/bin/bash', '-c', '"export CUDA_VISIBLE_DEVICES=%s; %s; python -u %s 2>&1 > %s"' % (
+            '/bin/bash', '-c', '"export CUDA_VISIBLE_DEVICES=%s; %s; python -u %s %s 2>&1 > %s"' % (
                 cuda_visible_devices,
                 pythonpath_export_str,
                 predict_script,
+                predict_script_args,
                 log_file
             )
             ])
@@ -229,7 +232,8 @@ if __name__ == "__main__":
 
     with h5py.File(out_container, 'w') as f:
         f.create_dataset('volumes/prediction/affinities', shape=(3,) + write_end, dtype=np.float32)
-        f['volumes/prediction/affinities'].attrs['offset'] = (offset[0] - 120, offset[1] + 36, offset[2] + 36)
+        # TODO fix this stuff here
+        f['volumes/prediction/affinities'].attrs['offset'] = (0, 0, 0)#(offset[0] - 120, offset[1] + 36, offset[2] + 36)
         f['volumes/prediction/affinities'].attrs['resolution'] = tuple(d * 3.0 for d in (40, 36, 36))
 
     read_roi = Roi(read_begin, read_end)
